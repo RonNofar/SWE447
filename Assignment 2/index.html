@@ -1,0 +1,2363 @@
+http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter16_020.html
+
+
+2) Modify the result of Exercise 1 from Chapter 15 to use the Stack and iterator in TStack2.h instead of an array of Shape pointers.
+ Add destructors to the class hierarchy so you can see that the Shape objects are destroyed when the Stack goes out of scope.
+
+        #include "stdafx.h"
+        #include "TStack2.h"
+        #include "Shape.h"
+        #include "Circle.h"
+        #include "Triangle.h"
+        #include "Square.h"
+        #include <iostream>
+
+        using namespace std;
+
+        int main()
+        {
+            Stack<Shape> shapes;
+            Shape* circlePtr = new Circle;
+            Shape* squarePtr = new Square;
+            Shape* trianglePtr = new Triangle;
+
+
+            shapes.push(circlePtr);
+            shapes.push(squarePtr);
+            shapes.push(trianglePtr);
+
+
+        
+                    return 0;
+        }
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+
+3) Modify TPStash.h so that the increment value used by inflate( ) can be changed throughout the lifetime of a particular container object.
+
+
+
+
+        template<class T>       
+        class PStash 
+        {
+            int quantity = 0;
+            int next = 0;        
+            T** storage = 0;
+
+
+            unsigned int incrementValue = 2;
+
+
+            void inflate(int increase = incrementValue);
+			[...]
+		}
+        
+
+
+
+
+
+
+        // Provide setter for setting inflation amount
+        template<class T>
+        void PStash<T>::setInflateValue(unsigned int inflateVal)
+        {
+            if (inflateVal <= 1000)
+                    incrementValue = inflateVal;
+            else
+                    throw out_of_range("Cannot increment Stash more than a 1000");
+        }
+
+
+
+
+        ... In main()
+
+
+
+
+        #include "stdafx.h"
+        #include "TPStash.h"
+        #include <iostream>
+
+
+        using namespace std;
+
+
+        int main()
+        {
+                PStash<int> stash;
+                int* num1 = new int(1);
+                int* num2 = new int(2);
+                int* num3 = new int(3);
+                int* num4 = new int(1);
+                int* num5 = new int(1);
+
+
+
+
+                stash.add(num1);
+                stash.add(num2);
+                stash.add(num3);
+
+
+                stash.setInflateValue(10);
+
+
+                stash.add(num4);
+                stash.add(num5);
+        
+                    return 0;
+        }
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+
+4) Modify TPStash.h so that the increment value used by inflate( ) automatically resizes itself to reduce the number of times it needs to be called. 
+For example, each time it is called it could double the increment value for use in the next call.
+Demonstrate this functionality by reporting whenever an inflate( ) is called, and write test code in main( ).
+
+
+
+
+        template<class T>        // no longer two argument template        
+        class PStash 
+        {
+                int quantity = 0;
+                int next = 0;        
+                T** storage = 0;
+
+
+                unsigned int incrementValue;          // added
+
+
+                void inflate();        // no arguments because it handles its own inflation value
+			[...]
+		}
+
+
+        
+        template<class T>
+        void PStash<T>::inflate()    // no argument, inflation method sets inflation value
+        {
+                
+                incrementValue = (2 * quantity) + 2;        
+
+                cout << "Inflation  " << incrementValue << endl;
+                const int psz = sizeof(T*);
+
+
+                T** st = new T*[quantity + incrementValue];
+
+
+                memset(st, 0, (quantity + incrementValue) * psz);
+                memcpy(st, storage, quantity * psz);
+
+
+                quantity += incrementValue;
+                cout << "New Quantity  " << quantity << endl;
+
+
+                delete[] storage;
+
+
+                storage = st;
+        }
+
+
+
+
+
+
+        ... In main()
+        
+        
+        #include "stdafx.h"
+        #include "TPStash.h"
+        #include <iostream>
+
+
+        using namespace std;
+
+
+        int main()
+        {
+                PStash<int> stash;
+                int* num1 = new int(1);
+                int* num2 = new int(2);
+                int* num3 = new int(3);
+                int* num4 = new int(1);
+                int* num5 = new int(1);
+
+
+                // deprecated PStash::setInflationValue()
+                stash.add(num1);
+                stash.add(num2);
+                stash.add(num3);
+                stash.add(num4);
+                stash.add(num5);
+        
+                    return 0;
+        }
+
+
+        
+        
+-------------------------------------------------------------------------------------------------------------------        
+        
+5) Templatize the fibonacci( ) function on the type of value that it produces (so it can produce long, float, etc. instead of just int).
+        
+        #include "stdafx.h"
+        #include "TPStash.h"
+        #include <iostream>
+        #include <memory>
+
+
+        using namespace std;
+
+
+        // Prototype
+        template<typename T>
+        T fibonacci(int n);
+
+
+        int main()
+        {
+                double tenthFib = fibonacci<double>(10);
+                cout << tenthFib << endl;
+        
+                    return 0;
+        }
+
+
+
+
+
+
+        // Templatized fibonacci that returns whatever type...
+        // Although this is pointless because all fibonacci numbers are integers... better to perform a cast
+        template<typename T>
+        T fibonacci(int n)
+        {
+                const int sz = 100;
+        
+
+
+                static int f[sz]; // Initialized to zero
+                f[0] = f[1] = 1;
+        
+                // Scan for unfilled array elements:
+                int i;
+                for (i = 0; i < sz; i++)
+                {
+                        if (f[i] == 0)
+                                break;
+                }
+
+
+                while (i <= n) 
+                {
+                        f[i] = f[i - 1] + f[i - 2];
+                        i++;
+                }
+
+
+                return f[n];
+        }
+
+
+        
+        
+-------------------------------------------------------------------------------------------------------------------        
+
+
+6)         Using the Standard C++ Library vector as an underlying implementation, create a Set template class that accepts only one of each type of object that you put into it.
+        Make a nested iterator class that supports the “end sentinel” concept in this chapter.
+         Write test code for your Set in main( ), and then substitute the Standard C++ Library set template to verify that the behavior is correct.
+
+
+        
+#pragma once
+#include <vector>
+#include <memory>
+#include <iostream>
+
+
+using namespace std;
+
+
+template<typename T>
+class MySet
+{
+public:
+        class iterator;
+        
+        MySet(int capacity = 10)
+        {
+                // set initial capacity
+                if (capacity > 0)
+                        uniqueSet.reserve(capacity);
+                else
+                        throw out_of_range("Not a valid capacity");
+
+
+                tail = new iterator(this);
+        }
+
+
+        virtual ~MySet()
+        {
+                delete tail;
+        }
+        
+        MySet(MySet&& other) : uniqueSet(other.uniqueSet)
+        {
+                other.uniqueSet = {};
+        }
+        
+
+
+        bool add(T element) 
+        {
+                if (isUnique(element)) 
+                {
+                        uniqueSet.push_back(element);
+                        return true;
+                }
+                else
+                        return false;
+        }
+        
+        bool removeElement(T element)
+        {
+                auto position = std::remove(uniqueSet.begin(), uniqueSet.end(), element);
+                if (position != uniqueSet.end())
+                {
+                        position->clear();
+                        return true;
+                }
+                else
+                        return false;
+        };
+
+
+        // remove one element
+        void eraseAt(int index)
+        {
+                if (index < 0 || index > uniqueSet.size())
+                        throw out_of_range("index is out of range");
+
+
+                uniqueSet.erase(uniqueSet.begin() + index);
+        }
+
+
+        void eraseAt(int start, int end)
+        {
+                bool isStartGreater = start > end;
+                bool isStartOutOfRange = start < 0 || start > uniqueSet.size();
+                bool isEndOutOfRange = end < 0 || end > uniqueSet.size();
+
+
+                if (isStartGreater)
+                        throw invalid_argument("start cannot be greater than end");
+                if (isStartOutOfRange || isEndOutOfRange)
+                        throw out_of_range("index is out of range");
+                
+                uniqueSet.erase(uniqueSet.begin() + start, uniqueSet.begin() + end);
+        }
+
+
+        T& at(int index)
+        {
+                // throw exception
+                return uniqueSet.at(index);
+        }
+
+
+        T& operator[](int index)
+        {
+                //possible exception thrown        
+                return uniqueSet.at(index);
+        }
+
+
+        unsigned int size()
+        {
+                return uniqueSet.size();
+        }
+
+
+        iterator begin()
+        {
+                return iterator(this, &uniqueSet[0]);
+        }
+
+
+        iterator end()
+        {
+                //return iterator(this, &uniqueSet[uniqueSet.size()-1]);
+                return iterator(*tail);
+        }
+
+
+        // for full functionality add union, difference, etc..
+        friend class iterator;
+private:
+        std::vector<T> uniqueSet;
+        iterator* tail;
+
+
+        // basic check to see if input element caller is trying to add is unique.
+        // Meaning, is it already in the "set" / vector. This is unique in terms of its VALUE and NOT its address
+        bool isUnique(T element)
+        {
+                auto position = std::find(uniqueSet.cbegin(), uniqueSet.cend(), element);
+                if (position == uniqueSet.cend())
+                        return true;
+
+
+                return false;
+        }
+};
+
+
+
+
+
+
+template<typename T>
+class MySet<T>::iterator
+{
+        T* data;
+        int currentIndex;
+        MySet* mySet;
+public:
+
+
+        iterator(MySet* inSet, T* inData = nullptr, int index = 0) :
+                mySet(inSet), currentIndex(index), data(inData)
+        {}
+
+
+        iterator(const iterator& other) : 
+                data(other.data), currentIndex(other.currentIndex), mySet(other.mySet)
+        {}
+
+
+        T& operator*() { return *data; }
+
+
+
+
+        void operator++()
+        {
+                if (currentIndex < mySet->size()-1)
+                {
+                        currentIndex += 1;
+                        data = &mySet->at(currentIndex);
+                }
+                else
+                {
+                        //data = &mySet->uniqueSet[mySet->size()];
+                        data = mySet->tail->data;
+                        currentIndex = mySet->tail->currentIndex;
+                        mySet = mySet->tail->mySet;
+                }
+        }
+
+
+        bool operator==(const iterator& rhs)
+        {
+                // the reason why I am checking all of this is because if they decide to 
+                // have a set with pointers then checking to see if 
+                if (this->data == rhs.data)
+                        return true;
+                else
+                        return false;
+        }
+
+
+        bool operator!=(const iterator& rhs)
+        {
+                return !operator==(rhs);
+        }
+};
+        
+        
+-------------------------------------------------------------------------------------------------------------------
+
+
+7) Modify AutoCounter.h so that it can be used as a member object inside any class whose creation and destruction you want to trace. 
+Add a string member to hold the name of the class. Test this tool inside a class of your own.
+
+
+
+
+#pragma once
+
+
+#include <iostream>
+#include <set> // Standard C++ Library container
+#include <string>
+
+
+class AutoCounter
+{
+private:
+        static int count;
+        int id;
+        string registeredClass;
+
+
+public:
+        AutoCounter(string regClass) : id(count++), registeredClass(regClass)
+        {
+                std::cout << "\nAutoCounter " + registeredClass + " Report: created[" << id << "]\n" << std::endl;
+        }
+
+
+        ~AutoCounter() 
+        {
+                std::cout << "\nAutoCounter Report: destroying[" << id << "]\n" << std::endl;
+        }
+
+
+
+
+        // Print both objects and pointers:
+        friend std::ostream& operator<<(
+                std::ostream& os, const AutoCounter& ac) {
+                return os << "AutoCounter " << ac.id;
+        }
+        friend std::ostream& operator<<(
+                std::ostream& os, const AutoCounter* ac) {
+                return os << "AutoCounter " << ac->id;
+        }
+};
+
+
+int AutoCounter::count = 0;
+
+
+
+
+
+
+
+
+... main()
+
+
+using namespace std;
+
+
+int main()
+{
+        MySet<string> someStrings(12);
+        MySet<string> someStrings2(12);
+
+
+        someStrings.add("one");
+        someStrings.add("two");
+        someStrings.add("three");
+        someStrings.add("four");
+        someStrings.add("four2");
+        someStrings.add("four3");
+        someStrings.add("four5");
+
+
+
+
+
+
+        for (auto itr = someStrings.begin(); itr != someStrings.end(); ++itr)
+                cout << *itr << endl;
+
+
+    return 0;
+}
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+
+8) Create a version of OwnerStack.h that uses a Standard C++ Library vector as its underlying implementation. 
+You may need to look up some of the member functions of vector in order to do this (or just look at the <vector> header file).
+
+
+
+
+#pragma once
+#include <vector>
+#include <iostream>
+
+
+
+
+/// Stack implemented as vector
+template<class T>
+class Stack 
+{
+private: 
+        std::vector<T*> elements;
+        bool own;
+        T* head = nullptr;
+
+
+public:
+        Stack(bool own = true) : own(own)
+        {
+                elements.push_back(head);
+        }
+
+
+        virtual ~Stack();
+
+
+
+
+        void push(T* dat) 
+        {
+                if(dat != nullptr)
+                        elements.push_back(dat);
+        }
+
+
+        T* peek() const 
+        {
+                return elements.back()
+        }
+
+
+        T* pop();
+};
+
+
+
+
+// if caller calls pop, they own resource
+template<class T> 
+T* Stack<T>::pop() 
+{
+        T* last = elements.back();
+        elements.pop_back();
+
+
+        return last;
+}
+
+
+template<class T> 
+Stack<T>::~Stack() 
+{
+        if (!own) 
+                return;
+
+
+        while (T* capture = pop())
+        {
+                if (capture != nullptr) 
+                {
+                        std::cout << "Destruction of: ";
+                        std::cout << *capture << std::endl;
+                        delete capture;
+                }
+                else
+                        break;
+        }
+}
+
+
+
+
+
+
+...in main()
+
+
+
+
+
+
+#include "stdafx.h"
+#include "TPStash.h"
+#include "MySet.h"
+#include "OwnerStack.h"
+#include <iostream>
+#include <memory>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <memory>
+
+
+using namespace std;
+
+
+int main()
+{
+        // Stack owns the newd resource
+        Stack<string> someStrings;
+        someStrings.push(new string("stringify"));
+        someStrings.push(new string("doobies"));
+        someStrings.push(new string("hoody"));
+        someStrings.push(new string("something cool"));
+        someStrings.push(new string("ohh boi!!"));
+
+
+        // stack does NOT own resource
+        Stack<string> otherStrings(false);
+        otherStrings.push(new string("lyer"));
+        otherStrings.push(new string("pants"));
+        otherStrings.push(new string("on fire!!"));
+        otherStrings.push(new string("Fun"));
+        otherStrings.push(new string("fun!!"));
+
+
+
+
+        // clean up because "WE" own the resource of otherStrings T*
+        string* capture = nullptr;
+        while (capture = otherStrings.pop())
+        {
+                cout << "In main: " << *capture << endl;
+                delete capture;
+        }
+
+
+    return 0;
+}
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+
+
+
+---------------------------------------------------------------------------------------------------
+
+
+9) Modify ValueStack.h so that it dynamically expands as you push( ) more objects and it runs out of space.  Change ValueStackTest.cpp to test the new functionality.
+
+
+
+
+#include "stdafx.h"
+#include <memory>
+#include <iostream>
+
+
+using namespace std;
+
+
+template<typename T>
+class ValueStack final
+{
+        shared_ptr<T> stack = nullptr;
+
+
+        unsigned int stackSize = 0;
+        unsigned int capacity = 3;
+
+
+        //expand
+        void expandStack()
+        {
+                cout << "expanding\n";
+                capacity *= 2;
+
+
+                shared_ptr<T> oldArray = stack;
+                stack = makeShared(capacity);
+
+
+                T* newArray = stack.get();
+                T* oldPtr = oldArray.get();
+                for (int i = 0; i < stackSize; i++)
+                {
+                        //move
+                        newArray[i] = move(oldPtr[i]);
+                }
+                newArray = nullptr;
+                oldPtr = nullptr;
+
+
+                // old array declared in here so will be freed by smart pointer
+        }
+
+
+        shared_ptr<T> makeShared(int size)
+        {
+                return shared_ptr<T>(new T[size], [](T* p) {delete[] p; });
+        }
+
+
+public:
+        ValueStack() :stackSize(0)
+        {
+                stack = makeShared(capacity);
+        }
+
+
+        // Copy-constructor copies object into array:
+        void push(const T& x) 
+        {
+                if(stackSize >= capacity)
+                        expandStack();
+
+
+                stack.get()[stackSize++] = x;
+        }
+
+
+        int size()
+        {
+                return stackSize;
+        }
+
+
+
+
+        T peek() const { return stack.get()[stackSize-1]; }
+
+
+
+
+        T pop() 
+        {
+                return stack.get()[--stackSize];
+        }
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+....in main()
+
+
+
+
+int main()
+{
+        ValueStack<int> someStack;
+
+
+        someStack.push(100);
+        someStack.push(111);
+        someStack.push(222);
+        someStack.push(333);
+        someStack.push(444);
+        someStack.push(555);
+        someStack.push(666);
+        someStack.push(777);
+        someStack.push(888);
+
+
+
+
+        cout << someStack.size() << endl;
+
+
+        someStack.pop();
+        someStack.pop();
+
+
+        cout << someStack.size() << endl;
+
+
+
+
+        system("PAUSE");
+    return 0;
+}
+
+
+
+
+--------------------------------------------------------------------------------------------------------
+
+
+10) Repeat Exercise 9 but use a Standard C++ Library vector as the internal implementation of the ValueStack. Notice how much easier this is.
+
+
+
+
+#include "stdafx.h"
+#include <memory>
+#include <iostream>
+#include <vector>
+#include <string>
+
+
+using namespace std;
+
+
+template<typename T>
+class ValueStack final
+{
+        vector<T> stack;
+public:
+        ValueStack() 
+        {
+                
+        }
+        // Copy-constructor copies object into array:
+        void push(const T& x) 
+        {
+                stack.push_back(x);
+        }
+
+
+        int size()
+        {
+                return stack.size();
+        }
+
+
+        T peek() const { return stack[stackSize-1]; }
+
+
+        T pop() 
+        {
+                T popped = stack[stack.size()-1];
+                stack.pop_back();
+                return popped;
+        }
+
+
+        int cap(int ok)
+        {
+                if (ok < 100)
+                        return ok;
+                else
+                        return 100;
+        }
+};
+
+
+
+
+in main().................
+
+
+int main()
+{
+        
+        
+        shared_ptr<int> ptr(new int[10], [](int* p) {delete[] p; } );
+
+
+        ValueStack<int> someStack;
+
+
+
+
+        someStack.push(100);
+        someStack.push(111);
+        someStack.push(222);
+        someStack.push(333);
+        someStack.push(444);
+        someStack.push(555);
+        someStack.push(666);
+        someStack.push(777);
+        someStack.push(888);
+
+
+
+
+        cout << someStack.size() << endl;
+
+
+        someStack.pop();
+        someStack.pop();
+
+
+        cout << someStack.size() << endl;
+
+
+
+
+        system("PAUSE");
+    return 0;
+}
+
+
+
+
+
+
+
+
+------------------------------------------------------------------------------------------------------
+11) Modify ValueStackTest.cpp so that it uses a Standard C++ Library vector instead of a Stack in main( ). 
+Notice the run-time behavior: Does the vector automatically create a bunch of default objects when it is created?
+
+
+
+
+
+
+
+
+int main()
+{
+        vector<string> sc;
+        for (int i = 0; i < 10; i++)
+                sc.push_back(to_string(i*i));
+        
+
+
+        // pop_bacK() does not return any results; 
+        // No copying of object and thus more efficient
+        cout << sc.back() << endl;
+        for (int k = 0; k < 10; k++)
+                sc.pop_back();
+        
+
+
+        system("PAUSE");
+    return 0;
+}
+
+
+
+
+--------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+12) Modify TStack2.h so that it uses a Standard C++ Library vector as its underlying implementation. Make sure that you don’t change the interface, so thatTStack2Test.cpp works unchanged.
+
+
+#pragma once
+#include <vector>
+#include <memory>
+
+
+template<class T> 
+class Stack 
+{
+        std::vector<std::shared_ptr<T>> stack;
+
+
+public:
+        Stack()
+        {}
+
+
+        virtual ~Stack() {}
+
+
+        // copy the data
+        void push(const T& data) 
+        {
+                stack.push_back(std::shared_ptr<T>(new T(data)));
+        }
+
+
+        //move the data
+        void push(T&& data)
+        {
+                stack.push_back(std::shared_ptr<T>(new T(std::move(data))));
+        }
+
+
+
+
+        std::shared_ptr<T> peek() const 
+        {
+                return stack.back();
+        }
+
+
+        std::shared_ptr<T> pop()
+        {
+                std::shared_ptr<T> result = stack.back();
+                stack.pop_back();
+                return result;
+        }
+
+
+
+
+        auto begin() const -> decltype(stack.begin())
+        { 
+                return stack.begin(); 
+        }
+        auto end() const -> decltype(stack.end())
+        {
+                return stack.end();
+        }
+};
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------
+13) Repeat Exercise 12 using a Standard C++ Library stack instead of a vector (you may need to look up information about the stack, or hunt through the<stack> header file).
+
+
+
+
+#pragma once
+#include <stack>
+#include <memory>
+
+template<class T> 
+class Stack 
+{
+        std::stack<std::shared_ptr<T>> myStack;
+
+public:
+        Stack()
+        {}
+
+        virtual ~Stack() {}
+
+        // copy the data
+        void push(const T& data) 
+        {
+                myStack.push(std::shared_ptr<T>(new T(data)));
+        }
+
+        //move the data
+        void push(T&& data)
+        {
+                myStack.push(std::shared_ptr<T>(new T(std::move(data))));
+        }
+
+
+        std::shared_ptr<T> peek() const 
+        {
+                return myStack.top();
+        }
+
+        std::shared_ptr<T> pop()
+        {
+                std::shared_ptr<T> top = nullptr;
+                if (myStack.size() > 0) {
+                        top = myStack.top();
+                        myStack.pop();
+                }
+                return top;
+        }
+};
+
+
+
+
+In main() …………………..
+
+
+#include "stdafx.h"
+#include"TStack2.h"
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <memory>
+
+using namespace std;
+
+
+int main()
+{
+        Stack<string> someStrings;
+        stack<string> strings;
+
+        someStrings.push("Its Fun to Imagine");
+        someStrings.push("- Richard Feynman");
+        someStrings.push("The Cosmos is Within Us. We are made of Star-Stuff. We are a way for the Universe to Know itself...");
+
+        shared_ptr<string> ptr = nullptr;
+        while (ptr = someStrings.pop())
+        {
+                cout << *ptr << endl;
+        }
+
+
+        system("PAUSE");
+   return 0;
+}
+
+
+
+
+
+-------------------------------------------------------------------------------------------
+14) Modify TPStash2.h so that it uses a Standard C++ Library vector as its underlying implementation. Make sure that you don’t change the interface, so thatTPStash2Test.cpp works unchanged.
+
+
+
+
+
+
+
+
+#pragma once
+#include <cstdlib>
+#include <vector>
+
+template<class T, int incr = 20>
+class PStash 
+{
+        std::vector<T*> storage;
+
+
+public:
+
+        PStash()
+        {}
+
+        virtual ~PStash();
+
+        void add(T* element);
+
+        T* operator[](int index) const;
+
+        T* remove(int index);
+
+        int count() const { 
+                return storage.size();
+        }
+
+        auto begin() -> decltype(storage.begin()) { 
+                return storage.begin(); 
+        }
+
+        auto end() -> decltype(storage.end()) { 
+                return storage.end(); 
+        }
+};
+
+
+template<class T, int incr>
+PStash<T, incr>::~PStash() 
+{
+        for (int i = 0; i < storage.size(); i++) 
+        {
+                if(storage[i] != nullptr)
+                        delete storage[i];
+
+                storage[i] = nullptr;
+        }
+}
+
+template<class T, int incr>
+void PStash<T, incr>::add(T* element) {
+        storage.push_back(element);
+}
+
+template<class T, int incr> inline
+T* PStash<T, incr>::operator[](int index) const 
+{
+        if (index >= 0 && index < storage.size())
+                return storage[index];
+
+        return nullptr;
+}
+
+
+
+
+
+
+
+
+
+
+template<class T, int incr>
+T* PStash<T, incr>::remove(int index) 
+{
+        // operator[] performs validity checks:
+        T* v = operator[](index);
+        storage[index] = nullptr;
+
+        return v;
+}
+
+
+
+
+
+In main() …………………………………………………..
+
+
+#include "stdafx.h"
+#include "TStack2.h"
+#include "TPStash2.h"
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <memory>
+
+using namespace std;
+
+
+int main()
+{
+        PStash<string, 5> someStrings;
+
+someStrings.add(new string("Carl Sagan"));
+someStrings.add(new string("Somewhere something incredible is waiting to be Known"));
+someStrings.add(new string("We are like butterflies who flutter for a day and think its forever"));
+someStrings.add(new string("We are like butterflies who flutter for a day and think its forever"));
+someStrings.add(new string("We are like butterflies who flutter for a day and think its forever"));
+
+        for (auto itr = someStrings.begin(); itr != someStrings.end(); itr++)
+        {
+                cout << *(*itr) << endl;
+        }
+        system("PAUSE");
+   return 0;
+}
+
+
+14) In IterIntStack.cpp, modify IntStackIter to give it an “end sentinel” constructor, and add operator== and operator!= . In main( ), use an iterator to move through the elements of the container until you reach the end sentinel.
+
+
+
+
+
+#pragma once
+
+
+#include <iostream>
+#include <string>
+using namespace std;
+
+
+class IntStack 
+{
+        enum { ssize = 100 };
+        int stack[ssize];
+        int top;
+
+
+public:
+        IntStack() : top(0) {}
+
+
+        void push(int i) 
+        {
+                stack[top++] = i;
+        }
+
+
+        int pop() {
+                return stack[--top];
+        }
+
+
+        class iterator;
+        friend class iterator;
+
+
+        class iterator 
+        {
+                IntStack& s;
+                int index;
+
+
+        public:
+                iterator(IntStack& is) : s(is), index(0) 
+                {}
+
+
+                // To create the "end sentinel" iterator:
+                iterator(IntStack& is, bool end)
+                        : s(is), index(is.top) 
+                {}
+
+
+                int current() const { return s.stack[index]; }
+
+
+                int operator++() { 
+                        return s.stack[++index];
+                }
+
+
+                int operator++(int) { 
+                        return s.stack[index++];
+                }
+
+
+                iterator& operator+=(int amount) {
+                        index += amount;
+                        return *this;
+                }
+
+
+                bool operator==(const iterator& rv) const {
+                        return index == rv.index;
+                }
+
+
+                bool operator!=(const iterator& rv) const {
+                        return index != rv.index;
+                }
+
+
+                int operator*() {
+                        return s.stack[s.top];
+                }
+        };
+
+
+        iterator begin() { return iterator(*this); }
+        // Create the "end sentinel":
+        iterator end() { return iterator(*this, true); }
+};
+
+
+
+
+In main() …………………………………..
+
+
+
+
+#include "stdafx.h"
+#include "TStack2.h"
+#include "TPStash2.h"
+#include "IterIntStack.h"
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <memory>
+
+
+using namespace std;
+
+
+
+
+int main()
+{
+        
+        IntStack is;
+        for (int i = 0; i < 20; i++)
+                is.push(i*i*i);
+
+
+        cout << "Traverse the whole IntStack\n";
+
+
+        IntStack::iterator it = is.begin();
+
+
+        while (it != is.end())
+                cout << it++ << endl;
+
+
+        cout << "Traverse a portion of the IntStack\n";
+
+
+        IntStack::iterator start = is.begin(), end = IntStack::iterator(is, true);
+
+
+        start += 5, end += 15;
+        cout << "start = " << *start << endl;
+        cout << "end = " << *end << endl;
+
+
+        while (start != end)
+                cout << start++ << endl;
+
+
+
+
+        system("PAUSE");
+    return 0;
+}
+
+
+
+
+
+
+---------------------------------------------------------------------------------
+16) Using TStack2.h, TPStash2.h, and Shape.h, instantiate Stack and PStash containers for Shape*, fill them each with an assortment of upcast Shape pointers, then use iterators to move through each container and call draw( ) for each object.
+
+
+
+
+
+
+
+
+17) Templatize the Int class in TPStash2Test.cpp so that it holds any type of object (feel free to change the name of the class to something more appropriate).
+
+
+
+
+template<typename T>
+class MyConsoleClass
+{
+    T i;
+public:
+    MyConsoleClass(T ii) : i(ii)
+    {
+        cout << ">" << i << ' ';
+    }
+    ~MyConsoleClass() { cout << "~" << i << ' '; }
+    
+    operator int() const { return i; }
+    
+    
+    friend ostream&
+    operator<<(ostream& os, const MyConsoleClass& x) {
+        return os << "MyConsoleClass: " << x.i;
+    }
+    friend ostream&
+    operator<<(ostream& os, const MyConsoleClass* x) {
+        return os << "MyConsoleClass: " << x->i;
+    }
+};
+
+
+
+
+
+
+In main() ……………
+
+
+
+
+
+
+int main(int argc, const char * argv[])
+{   
+    MyConsoleClass<int> someClass(12);
+    return 0;
+}
+
+
+
+
+----------------------------------------------------------------------------------
+
+
+18) Templatize the IntArray class in IostreamOperatorOverloading.cpp from Chapter 12, templatizing both the type of object that is contained and the size of the internal array.
+
+
+
+
+
+
+template<typename T, int SIZE>
+class TypeArray
+{
+    T arr[SIZE];
+    
+Public:
+
+
+
+
+    TypeArray()
+    {
+        memset(arr, 0, SIZE* sizeof(*arr));
+    }
+
+
+
+
+    int& operator[](int x) 
+    {
+
+
+        return arr[x];
+    }
+    
+    
+    friend ostream&
+    operator<<(ostream& os, const TypeArray& ia);
+    friend istream&
+    operator>>(istream& is, TypeArray& ia);
+};
+
+
+
+
+
+
+
+
+template<typename T, int SIZE>
+ostream& operator<<(ostream& os, const TypeArray<T, SIZE>& ia)
+{
+    for(int j = 0; j < SIZE; j++)
+    {
+        os << ia.arr[j];
+        if(j != ia.SIZE -1)
+            os << ", ";
+    }
+    
+    os << endl;
+    return os;
+}
+
+
+template<typename T, int SIZE>
+istream& operator>> (istream& is, TypeArray<T, SIZE>& ia)
+{
+    for(int j = 0; j < SIZE; j++)
+        is >> ia.i[j];
+    return is;
+}
+
+
+
+
+
+
+
+
+19) Turn ObjContainer in NestedSmartPointer.cpp from Chapter 12 into a template. Test it with two different classes.
+
+
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <cstring>
+#include <vector>
+using namespace std;
+
+
+// Container:
+template<typename T>
+class ObjContainer final
+{
+    vector<std::unique_ptr<T>> a;
+    
+    ObjContainer(const ObjContainer&);
+    ObjContainer& operator=(const ObjContainer& rhs);
+public:
+    ObjContainer(){}
+    
+    void add(std::unique_ptr<T> obj) {
+        a.push_back(std::move(obj));
+    }
+   
+};
+
+
+
+
+int main(int argc, const char * argv[])
+{
+    ObjContainer<string> something;
+    
+    something.add(std::unique_ptr<string>(new string("thi thing")));
+    something.add(std::unique_ptr<string>(new string("antoher thing")));
+    
+    return 0;
+}
+
+
+
+
+-----------------------------------------------------------------------
+
+
+
+
+20) Modify C15:OStack.h and C15:OStackTest.cpp by templatizing class Stack so that it automatically multiply inherits from the contained class and from Object. The generatedStack should accept and produce only pointers of the contained type. 
+
+
+#pragma once
+#include "Object.h"
+
+
+template<typename T>
+class OStack : public Object, public T
+{
+        struct Link 
+        {
+                T* data;
+                Link* next;
+                Link(T* dat, Link* nxt) :
+                        data(dat), next(nxt) {}
+        };
+
+
+        Link* head;
+
+
+public:
+        OStack() : head(0) 
+        {}
+
+
+        ~OStack() 
+        {
+                while (head) 
+                {
+                        T* ptr =  pop();
+                        if (ptr != nullptr)
+                                delete ptr;
+                }
+        }
+
+
+        void push(T* dat) 
+        {
+                head = new Link(dat, head);
+        }
+
+
+        T* peek() const 
+        {
+                return head ? head->data : 0;
+        }
+
+
+        T* pop()
+        {
+                if (head == 0) 
+                        return 0;
+
+
+                T* result = head->data;
+
+
+                Link* oldHead = head;
+
+
+                head = head->next;
+
+
+                delete oldHead;
+                return result;
+        }
+};
+
+
+
+
+In main() ……………………….
+
+
+
+
+#include "stdafx.h"
+#include "TStack2.h"
+#include "TPStash2.h"
+#include "IterIntStack.h"
+#include "OStack.h"
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <windows.system.h>
+using namespace std;
+
+
+class MyString : public string, public Object 
+{
+public:
+        ~MyString() 
+        {
+                cout << "deleting string: " << *this << endl;
+        }
+
+        MyString(string s) : string(s) {}
+};
+
+
+
+
+int main(int argc, char* argv[])
+{
+        ifstream input("C:\\Users\\Tyler\\Desktop\\MyFile.txt");
+        OStack<string> textlines;
+
+        string line;
+        while (getline(input, line)) {
+                textlines.push(new MyString(line));
+                cout << line << endl;
+        }
+
+
+
+
+
+
+        MyString* s;
+        for (int i = 0; i < 10; i++) 
+        {
+                if ((s = (MyString*)textlines.pop()) == 0)
+                        break;
+
+                cout << *s << endl;
+                delete s;
+        }
+        cout << "\n\nLetting the destructor do the rest:" << endl;
+
+                
+        system("PAUSE");
+}
+
+
+
+------------------------------------------------------------------------------------------
+
+
+
+
+
+
+21) Repeat Exercise 20 using vector instead of Stack.
+
+
+
+
+#include "stdafx.h"
+#include "TStack2.h"
+#include "TPStash2.h"
+#include "IterIntStack.h"
+#include "OStack.h"
+#include <fstream>
+#include <iostream>
+#include <string>
+
+
+using namespace std;
+class MyString : public string, public Object 
+{
+public:
+        ~MyString() {
+                cout << "deleting string: " << *this << endl;
+        }
+
+
+        MyString(string s) : string(s) {}
+};
+
+
+int main(int argc, char* argv[])
+{
+        ifstream input("C:\\Users\\Tyler\\Desktop\\MyFile.txt");
+        vector<string*> textlines;
+
+
+        string line;
+        while (getline(input, line)) {
+                textlines.push_back(new MyString(line));
+                cout << line << endl;
+        }
+
+
+        MyString* s;
+        for (int i = 0; i < textlines.size(); i++) 
+        {
+                if ( (s = static_cast<MyString*>(textlines.back()) ) == nullptr)
+                        break;
+
+
+                textlines.pop_back();
+                cout << *s << endl;
+                delete s;
+        }
+        cout << "\n\n Letting the destructor do the rest:" << endl;
+
+
+                
+        system("PAUSE");
+}
+
+
+
+
+
+
+22) Inherit a class StringVector from vector<void*> and redefine the push_back( ) and operator[] member functions to accept and produce onlystring* (and perform the proper casting). Now create a template that will automatically make a container class to do the same thing for pointers to any type. This technique is often used to reduce code bloat from too many template instantiations.
+
+
+
+
+
+
+
+
+#include "stdafx.h"
+#include "TStack2.h"
+#include "TPStash2.h"
+#include "IterIntStack.h"
+#include "OStack.h"
+#include <fstream>
+#include <iostream>
+#include <string>
+
+
+
+
+using namespace std;
+
+
+class StringVector : public vector<void*>
+{
+public:
+        StringVector()
+        {}
+
+
+        void push_back(string* ptr)
+        {
+                void* stringPtr = static_cast<void*>(ptr);
+                vector<void*>::push_back(std::move(stringPtr));
+        }
+
+
+        string* operator[](int index)
+        {
+                return static_cast<string*>(this->at(index));
+        }
+};
+
+
+int main(int argc, char* argv[])
+{
+        StringVector someVector;
+
+
+        someVector.push_back(new string("suhh dude"));
+        string* ptr = someVector[0];
+        someVector.pop_back();
+
+
+        cout << *ptr << endl;
+        delete ptr;
+        
+        system("PAUSE");
+}
+
+
+
+
+--------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+23) In TPStash2.h, add and test an operator- to PStash::iterator, following the logic of operator+.
+
+
+// in PStash
+iterator operator-(int amount) const 
+{
+            iterator itr(*this);
+            itr -= amount;
+            return itr;
+ }
+
+
+In main().............
+
+
+
+
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <string>
+#include "TPStash2.h"
+
+
+using namespace std;
+int main(int argc, const char * argv[])
+{
+    PStash<int> someInts;
+    
+    someInts.add(new int(1));
+    someInts.add(new int(2));
+    someInts.add(new int(3));
+    someInts.add(new int(4));
+    someInts.add(new int(5));
+    someInts.add(new int(6));
+    someInts.add(new int(7));
+    someInts.add(new int(8));
+    someInts.add(new int(9));
+    
+    auto itr = someInts.begin();
+    itr = itr + 3;
+    
+    cout << *(*itr) << endl;
+    
+    itr = itr - 3;
+    cout << *(*itr) << endl;
+  
+    return 0;
+}
+-----------------------------------------------------------------------
+
+
+
+
+24) In Drawing.cpp, add and test a function template to call erase( ) member functions.
+
+
+
+
+
+
+#include "stdafx.h"
+#include <iostream>
+#include <memory>
+#include "Circle.h"
+#include "Square.h"
+#include "Triangle.h"
+#include "TPStash2.h"
+#include "TStack2.h"
+#include "Shape.h"
+using namespace std;
+
+
+// A Drawing is primarily a container of Shapes:
+class Drawing : public PStash<Shape> 
+{
+public:
+        ~Drawing() { cout << "~Drawing" << endl; }
+};
+
+
+// A Plan is a different container of Shapes:
+class Plan : public Stack<Shape> 
+{
+public:
+        ~Plan() { cout << "~Plan" << endl; }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+template<class Iter>
+void drawAll(Iter start, Iter end) 
+{
+        while (start != end)
+        {
+                (*start)->draw();
+                start++;
+        }
+}
+
+
+
+
+
+
+template<typename T>
+void eraseAll(T& arr)
+{
+        arr.erase();
+}
+
+
+
+
+int main() 
+{
+
+
+        Drawing d;
+        d.add(new Circle);
+        d.add(new Square);
+
+
+
+
+        Plan p;
+        p.push(Square());
+        p.push(Circle());
+        
+
+
+        Shape* sarray[] = { new Circle, new Square, new Triangle };
+
+
+        // The iterators and the template function
+        // allow them to be treated generically:
+        cout << "Drawing d:" << endl;
+        drawAll(d.begin(), d.end());
+        drawAll(sarray, sarray + sizeof(sarray) / sizeof(*sarray));
+
+
+        eraseAll<Drawing>(d);
+        eraseAll<Plan>(p);
+
+
+        cout << "\n\nAfter erase: \n\n" << endl;
+        cout << d.count() << endl;
+        cout << p.count() << endl;
+
+
+        for (auto itr = begin(sarray); itr != end(sarray); itr++)
+        {
+                delete *itr;
+        }
+
+
+        system("PAUSE");
+}
+---------------------------------------------------------------------------------------
+
+
+25) (Advanced) Modify the Stack class in TStack2.h to allow full granularity of ownership: Add a flag to each link indicating whether that link owns the object it points to, and support this information in the push( ) function and destructor. Add member functions to read and change the ownership for each link.
+
+
+
+
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <string>
+#include <list>
+#include "TPStash2.h"
+using namespace std;
+
+
+template<class T>
+class LinkList
+{
+    struct Link
+    {
+        shared_ptr<T> data = nullptr;
+        shared_ptr<Link> next = nullptr;
+        shared_ptr<Link> previous = nullptr;
+        
+        Link(){}
+        
+        Link(const T& inData, shared_ptr<Link> _next = nullptr, shared_ptr<Link> _previous = nullptr)
+        {
+            data = shared_ptr<T>(new T(inData));
+            next = _next;
+            previous = _previous;
+        }
+        
+        
+        Link(const Link& other)
+        {
+            // make a copy of the data; NOT a pointer to the same data object
+            data = shared_ptr<T>(new T(*other.data));
+            
+            // leave the pointers null; we dont want them pointing to the original chain;
+            // this in effect gives a completely seperated node with the same data
+        }
+        
+        Link(Link&& other)
+        {
+            // move data;
+            data = std::move(other.data);
+            
+            // leave the pointers null; we dont want them pointing to the original chain;
+            // this in effect gives a completely seperated node with the same data
+        }
+        
+        T& getData()
+        {
+            return *data;
+        }
+    };
+    
+    // pointer to the head and tail sentinels
+    shared_ptr<Link> head = nullptr;
+    shared_ptr<Link> tail = nullptr;
+    
+public:
+    
+    class iterator;
+    friend class iterator;
+    
+    class iterator
+    {
+    private:
+        shared_ptr<Link> current = nullptr;
+        
+    public:
+        
+        iterator(shared_ptr<Link> ptr = nullptr) :
+            current(ptr)
+        {}
+        
+        T& operator*()
+        {
+            return current->getData();
+        }
+        
+        iterator& operator++() {
+            if(current != nullptr)
+                current = current->next;
+            return *this;
+        }
+        
+        iterator& operator++(int){
+            operator++();
+        }
+        
+        iterator& operator--()
+        {
+            if(current != nullptr)
+                current = current->previous;
+            return *this;
+        }
+        
+        iterator& operator--(int)
+        {
+            operator--();
+            return *this;
+        }
+        
+        bool operator==(const iterator& rhs){
+            return (current == rhs.current);
+        }
+        
+        bool operator!=(const iterator& rhs){
+            return !operator==(rhs);
+        }
+    };
+    
+    
+    LinkList()
+    {
+        head = shared_ptr<Link>(new Link);
+        tail = shared_ptr<Link>(new Link);
+        head->next = tail;
+        tail->previous = head;
+    }
+    
+    virtual ~LinkList() {}
+    
+
+
+
+
+
+
+    // copy the data
+    void insert(const T& data)
+    {
+        
+    }
+    
+    T& back();
+    T& front();
+    T& pop_back();
+    T& pop_front();
+    
+    
+    void push_front(const T& data)
+    {
+        shared_ptr<Link> newNode = shared_ptr<Link>(new Link(data));
+        newNode->previous = head;
+        newNode->next = head->next;
+        
+        head->next = newNode;
+        newNode->next->previous = newNode;
+    }
+    
+    iterator begin() const
+    {
+        return iterator(head->next);
+    }
+    iterator end() const
+    {
+        return iterator(tail);
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+26) (Advanced) Modify PointerToMemberOperator.cpp from Chapter 12 so that the FunctionObject and operator->* are templatized to work with any return type (for operator->*, you’ll have to use member templates, described in Volume 2). Add and test support for zero, one and two arguments in Dogmember functions.
