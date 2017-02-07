@@ -11,19 +11,22 @@ function init() {
         return;
     }
 
-	var program = initShaders(
-	gl,
-	"Cone-vertex-shader",
-	"Cone-fragment-shader");
-    
-	gl.useProgram(program);
+    gl.clearColor( 0.25, 0.45, 0.75, 1.0 );
 	
-	cone = new Cone( n );
+    var program = initShaders(
+	    gl,
+	    "Cone-vertex-shader",
+	    "Cone-fragment-shader");
+    
+    gl.useProgram(program);
+	
+    cone = new Cone( n );
 
     render();
 }
 
 function render() {
+    gl.clear( gl.COLOR_BUFFER_BIT );
     cone.render();
 }
 
