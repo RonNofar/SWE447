@@ -20,7 +20,7 @@ function init() {
     
     gl.useProgram(program);
 	
-    cone = new Cone( n );
+    cone = new Cone( 100 );
 
     render();
 }
