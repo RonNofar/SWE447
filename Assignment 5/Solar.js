@@ -18,16 +18,16 @@ var gl;
 
 var Planets = {
   Sun : undefined,
-  // Mercury : undefined,
-  // Venus : undefined,
+  Mercury : undefined,
+  Venus : undefined,
   Earth : undefined,
-  // Moon : undefined,
-  // Mars : undefined,
-  // Jupiter : undefined,
-  // Saturn : undefined,
-  // Uranus : undefined,
-  // Neptune : undefined,
-  // Pluto : undefined
+  Moon : undefined,
+  Mars : undefined,
+  Jupiter : undefined,
+  Saturn : undefined,
+  Uranus : undefined,
+  Neptune : undefined,
+  Pluto : undefined
 };
 
 // Viewing transformation parameters
@@ -35,7 +35,7 @@ var V;  // matrix storing the viewing transformation
 
 // Projection transformation parameters
 var P;  // matrix storing the projection transformation
-var near = 10;      // near clipping plane's distance
+var near = 100;      // near clipping plane's distance
 var far = 120;      // far clipping plane's distance
 
 // Animation variables
@@ -47,6 +47,8 @@ var timeDelta = 0.5; // the amount that time is updated each fraime
 //
 //  init() - scene initialization function
 //
+
+
 
 function init() {
   canvas = document.getElementById("webgl-canvas");
@@ -145,8 +147,21 @@ function render() {
   planet.render();
   ms.pop();
   
-  // Earth
+  var planetNames = [ 
+	"Mercury", "Venus", "Earth", 
+	"Mars", "Jupiter", "Saturn", 
+	"Uranus", "Neptune", "Pluto"
+  ];
+
   
+  for (var i = 0; i < planetNames.length; ++i) { // for some reason when using for in, this does not work
+	  renderPlanet(planetNames[i],gl,ms);
+  };
+  
+  
+  
+    // Earth
+  /*
   name = "Earth";
   planet = Planets[name];
   data = SolarSystem[name];
@@ -166,9 +181,10 @@ function render() {
   gl.uniformMatrix4fv(planet.uniforms.P, false, flatten(P));
   gl.uniform4fv(planet.uniforms.color, flatten(data.color));
   planet.render();
+ 
   
   // Moon
-  /*
+  
   name = "Moon"; 
   planet = Planets[name];
   data = SolarSystem[name];
@@ -177,7 +193,7 @@ function render() {
 
   ms.push();
   ms.rotate(data.year*time, [0, 0, 1]);
-  ms.translate([data.distance*100, 0, 0]);
+  ms.translate([data.distance*1000, 0, 0]);
   ms.scale(data.radius);
   
   gl.useProgram(planet.program);
@@ -187,8 +203,39 @@ function render() {
   planet.render();
   ms.pop();
   ms.pop();
-*/
+  */
   window.requestAnimationFrame(render);
+}
+
+function renderPlanet(name, gl, ms) {
+	
+  planet = Planets[name];
+  data = SolarSystem[name];
+  
+  planet.PointMode = false;
+  
+  ms.push();
+  ms.rotate(data.year*time, [0, 0, 1]);
+  ms.translate([data.distance*10, 0, 0]);
+  
+  ms.push(); // for children
+  ms.scale(data.radius);
+  //ms.pop();
+  
+  gl.useProgram(planet.program);
+  gl.uniformMatrix4fv(planet.uniforms.MV, false, flatten(ms.current()));
+  gl.uniformMatrix4fv(planet.uniforms.P, false, flatten(P));
+  gl.uniform4fv(planet.uniforms.color, flatten(data.color));
+  planet.render();
+  ms.pop();
+	
+  if (data.children != null) {
+	for (var child in data.children) {
+		renderPlanet(data.children[child], gl, ms);
+	}
+  }
+	
+  ms.pop(); // for children
 }
 
 //---------------------------------------------------------------------------
