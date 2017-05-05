@@ -58,7 +58,7 @@ var starColor = (function() { // Sun
     return colors[Math.floor(Math.random() * colors.length)];
   })(),
   star = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(7, 1),
+    new THREE.IcosahedronGeometry(7, 2),
     new THREE.MeshBasicMaterial({
       color: 0xFFFFFF,
     })
@@ -70,7 +70,7 @@ scene.add(star);
 
 for (var i = 1, scaleX = 1.1, scaleY = 1.1, scaleZ = 1.1; i < 5; i++) { // creates the extra layers
   var starGlow = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(7, 1),
+    new THREE.IcosahedronGeometry(7, 2),
     new THREE.MeshBasicMaterial({
       color: starColor,
       transparent: true,
